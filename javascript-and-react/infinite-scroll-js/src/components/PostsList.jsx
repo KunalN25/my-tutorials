@@ -6,18 +6,27 @@ const PostsList = () => {
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true); // Add hasMore state
+
   const observer = useRef();
 
   const loadMorePosts = useCallback(async () => {
     setLoading(true);
     const newPosts = await fetchPosts(page, 10);
-    setPosts((prevPosts) => [...prevPosts, ...newPosts]);
+    if (newPosts.length === 0) {
+      setHasMore(false); // Stop making API calls if there are no more posts
+    } else {
+      setPosts((prevPosts) => [...prevPosts, ...newPosts]);
+      setPage((prevPage) => prevPage + 1);
+    }
     setLoading(false);
   }, [page]);
 
   useEffect(() => {
-    loadMorePosts();
-  }, [loadMorePosts]);
+    if (hasMore) {
+      loadMorePosts();
+    }
+  }, [loadMorePosts, hasMore]);
 
   const lastPostElementRef = useCallback(
     (node) => {
@@ -25,14 +34,14 @@ const PostsList = () => {
       if (observer.current) observer.current.disconnect();
 
       observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-          setPage((prevPage) => prevPage + 1); // trigger loading of new posts by chaging page no
+        if (entries[0].isIntersecting && hasMore) {
+          setPage((prevPage) => prevPage + 1);
         }
       });
 
       if (node) observer.current.observe(node);
     },
-    [loading]
+    [loading, hasMore]
   );
 
   return (

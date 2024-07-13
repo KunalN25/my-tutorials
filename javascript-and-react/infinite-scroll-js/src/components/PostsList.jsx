@@ -6,18 +6,16 @@ const PostsList = () => {
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true); // Add hasMore state
-
+  const [hasMore, setHasMore] = useState(true);
   const observer = useRef();
 
   const loadMorePosts = useCallback(async () => {
     setLoading(true);
     const newPosts = await fetchPosts(page, 10);
     if (newPosts.length === 0) {
-      setHasMore(false); // Stop making API calls if there are no more posts
+      setHasMore(false); // Set hasMore to false if no more posts are returned
     } else {
       setPosts((prevPosts) => [...prevPosts, ...newPosts]);
-      setPage((prevPage) => prevPage + 1);
     }
     setLoading(false);
   }, [page]);
@@ -30,12 +28,12 @@ const PostsList = () => {
 
   const lastPostElementRef = useCallback(
     (node) => {
-      if (loading) return;
+      if (loading || !hasMore) return; // Stop observing if loading or no more posts
       if (observer.current) observer.current.disconnect();
 
       observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          setPage((prevPage) => prevPage + 1);
+        if (entries[0].isIntersecting) {
+          setPage((prevPage) => prevPage + 1); // Trigger loading of new posts by changing page number
         }
       });
 
@@ -50,7 +48,7 @@ const PostsList = () => {
       <ul>
         {posts.map((post, index) => (
           <li
-            key={`${Math.random()} ${post.id}`}
+            key={post.id} // Use post.id directly
             ref={posts.length === index + 1 ? lastPostElementRef : null}
           >
             <h2>{post.title}</h2>
@@ -59,6 +57,7 @@ const PostsList = () => {
         ))}
       </ul>
       {loading && <p>Loading...</p>}
+      {/* Message indicating no more posts */}
     </div>
   );
 };
